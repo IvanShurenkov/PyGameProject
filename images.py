@@ -15,3 +15,5 @@ def load_image(name, colorkey=None):
 
 grass_image = load_image("grass.jpg")
 tree_image = load_image("tree.jpg", -1)
+stone_image1 = load_image("stone_1.png", -1)
+stone_image2 = load_image("stone_2.png", -1)
