@@ -6,8 +6,6 @@ from queue import Queue
 import time
 
 
-
-
 class Tree(pygame.sprite.Sprite):
     def __init__(self, x, y, group=all_trees):
         super().__init__(group)
