@@ -107,7 +107,7 @@ def bfs(start_x, start_y, end_x, end_y):
             break
         for i in step:
             if check(a[1] + i[1], a[0] + i[0]) and start_field[a[0] + i[0]][a[1] + i[1]] == 0 \
-               and not used[a[0] + i[0]][a[1] + i[1]]:
+                    and not used[a[0] + i[0]][a[1] + i[1]]:
                 used[a[0] + i[0]][a[1] + i[1]] = True
                 parent[a[0] + i[0]][a[1] + i[1]] = a
                 q.put([a[0] + i[0], a[1] + i[1]])
@@ -163,7 +163,7 @@ while running:
             print(arr)
     t1 = time.time()
     if len(arr) != 0 and t1 - t > 0.5:
-        
+
         zombie = pygame.sprite.Group()
         Zombie(arr[id][1] * board.cell_size, arr[id][0] * board.cell_size, zombie)
         zombie.draw(screen)
