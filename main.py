@@ -163,6 +163,7 @@ while running:
             print(arr)
     t1 = time.time()
     if len(arr) != 0 and t1 - t > 0.5:
+        
         zombie = pygame.sprite.Group()
         Zombie(arr[id][1] * board.cell_size, arr[id][0] * board.cell_size, zombie)
         zombie.draw(screen)
