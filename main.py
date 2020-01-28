@@ -1,8 +1,9 @@
 import pygame
 from constants import screen, board_size_x, board_size_y, size, start_field
-from images import grass_image, tree_image, load_image, stone_image1, stone_image2, zombie_image
+from images import grass_image, tree_image, load_image, stone_image1, stone_image2, \
+                   zombie_down, zombie_left, zombie_right, zombie_up
 from groups import all_grass, all_trees, all_stone, zombies
-from queue import Queue
+from algorithm import bfs
 import time
 
 
@@ -15,9 +16,16 @@ class Tree(pygame.sprite.Sprite):
 
 
 class Zombie(pygame.sprite.Sprite):
-    def __init__(self, x, y, group):
+    def __init__(self, x, y, group, move, moment):  # move = [y, x]
         super().__init__(group)
-        self.image = zombie_image
+        if move == [1, 0]:
+            self.image = zombie_right[moment]
+        elif move == [-1, 0]:
+            self.image = zombie_left[moment]
+        elif move == [0, -1]:
+            self.image = zombie_up[moment]
+        else:
+            self.image = zombie_down[moment]
         self.turn = 0
         self.move = 0
         self.rect = self.image.get_rect()
@@ -59,7 +67,7 @@ class Board:
     def get_click(self, mouse_pos):
         cell = self.get_cell(mouse_pos)
         if cell:
-            print(cell[2], cell[3])
+            # print(cell[2], cell[3])
             return self.on_click(cell)
         else:
             print(None)
@@ -89,69 +97,41 @@ class Board:
                 return []
             return bfs(self.x, self.y, w, h)
 
+    def build(self):
+        for i in range(board_size_x):
+            for j in range(board_size_y):
+                Grass(i * board.cell_size, j * board.cell_size)
 
-def check(x, y):
-    t = (0 <= x < board_size_x and 0 <= y < board_size_y)
-    return t
+        all_grass.draw(screen)
 
+        for i in range(board_size_y):
+            for j in range(board_size_x):
+                if start_field[i][j] == 1:
+                    tree = pygame.sprite.Group()
+                    Tree(j * board.cell_size, i * board.cell_size, tree)
+                    tree.draw(screen)
+                elif start_field[i][j] == 2 or start_field[i][j] == 3:
+                    stone = pygame.sprite.Group()
+                    Stone(j * board.cell_size, i * board.cell_size, start_field[i][j] % 2, stone)
+                    stone.draw(screen)
 
-def bfs(start_x, start_y, end_x, end_y):
-    q = Queue()
-    q.put([start_y, start_x])
-    step = [[1, 0], [0, 1], [-1, 0], [0, -1]]
-    used = [[False] * board_size_x for _ in range(board_size_y)]
-    parent = [[[-1, -1]] * board_size_x for _ in range(board_size_y)]
-    while not q.empty():
-        a = q.get()
-        if a == [end_y, end_x]:
-            break
-        for i in step:
-            if check(a[1] + i[1], a[0] + i[0]) and start_field[a[0] + i[0]][a[1] + i[1]] == 0 \
-                    and not used[a[0] + i[0]][a[1] + i[1]]:
-                used[a[0] + i[0]][a[1] + i[1]] = True
-                parent[a[0] + i[0]][a[1] + i[1]] = a
-                q.put([a[0] + i[0], a[1] + i[1]])
-    ans = [[end_y, end_x]]
-    while parent[end_y][end_x] != [-1, -1]:
-        ans.append(parent[end_y][end_x])
-        x = parent[end_y][end_x][1]
-        end_y = parent[end_y][end_x][0]
-        end_x = x
-    ans = list(reversed(ans))
-    return ans
+        for i in zombies:
+            zombie = pygame.sprite.Group()
+            Zombie(i[0] * board.cell_size, i[1] * board.cell_size, zombie, [0, 0], 0)
+            zombie.draw(screen)
+            start_field[i[1]][i[0]] = 10
 
 
 board = Board(board_size_x, board_size_y)
 
-for i in range(board_size_x):
-    for j in range(board_size_y):
-        Grass(i * board.cell_size, j * board.cell_size)
-
-all_grass.draw(screen)
-
-for i in range(board_size_y):
-    for j in range(board_size_x):
-        if start_field[i][j] == 1:
-            tree = pygame.sprite.Group()
-            Tree(j * board.cell_size, i * board.cell_size, tree)
-            tree.draw(screen)
-        elif start_field[i][j] == 2 or start_field[i][j] == 3:
-            stone = pygame.sprite.Group()
-            Stone(j * board.cell_size, i * board.cell_size, start_field[i][j] % 2, stone)
-            stone.draw(screen)
-
-for i in zombies:
-    zombie = pygame.sprite.Group()
-    Zombie(i[0] * board.cell_size, i[1] * board.cell_size, zombie)
-    zombie.draw(screen)
-    start_field[i[1]][i[0]] = 10
+board.build()
 
 running = True
 
 x, y = 26, 18
 
 arr = []
-id = 0
+id = 1
 t = time.time()
 
 while running:
@@ -160,17 +140,27 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             arr = board.get_click(event.pos)
-            print(arr)
+            # print(arr)
     t1 = time.time()
     if len(arr) != 0 and t1 - t > 0.5:
+        grass = pygame.sprite.Group()
+        Grass(arr[id - 1][1] * board.cell_size, arr[id - 1][0] * board.cell_size, grass)
+        start_field[arr[id - 1][0]][arr[id - 1][1]] = 0
+        grass.draw(screen)
+        for i in range(4):
+            grass = pygame.sprite.Group()
+            Grass(arr[id][1] * board.cell_size, arr[id][0] * board.cell_size, grass)
+            grass.draw(screen)
 
-        zombie = pygame.sprite.Group()
-        Zombie(arr[id][1] * board.cell_size, arr[id][0] * board.cell_size, zombie)
-        zombie.draw(screen)
-        start_field[arr[id][0]][arr[id][1]] = 10
+            zombie = pygame.sprite.Group()
+            Zombie(arr[id][1] * board.cell_size, arr[id][0] * board.cell_size, zombie, [arr[id][1] - arr[id - 1][1],
+                   arr[id][0] - arr[id - 1][0]], i)
+            zombie.draw(screen)
+            start_field[arr[id][0]][arr[id][1]] = 10
+
         id += 1
         t = time.time()
         if id == len(arr):
-            id = 0
+            id = 1
             arr = []
     pygame.display.flip()
