@@ -1,16 +1,42 @@
 import pygame
-from constants import screen, board_size_x, board_size_y, size, start_field
-from images import grass_image, tree_image, load_image, stone_image1, stone_image2, \
-                   zombie_down, zombie_left, zombie_right, zombie_up
-from groups import all_grass, all_trees, all_stone, zombies
+from constants import screen, board_size_x, board_size_y, size, start_field, menu_size_x, menu_size_y, menu_array
+from images import grass_image, tree_image, stone_image1, stone_image2, shovel_image, \
+                   zombie_down, zombie_left, zombie_right, zombie_up, bed_image, cell_image, laboratory_image
+from groups import all_grass, zombies, all_cell
 from algorithm import bfs
 import time
 
 
-class Tree(pygame.sprite.Sprite):
-    def __init__(self, x, y, group=all_trees):
+class FieldImage(pygame.sprite.Sprite):
+    def __init__(self, x, y, image, group):
         super().__init__(group)
-        self.image = tree_image
+        if image == 1:
+            self.image = tree_image
+        elif image == 2:
+            self.image = stone_image1
+        elif image == 3:
+            self.image = stone_image2
+        elif image == 4:
+            self.image = bed_image
+        elif image == 5:
+            self.image = laboratory_image
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+
+
+class MenuImage(pygame.sprite.Sprite):
+    def __init__(self, x, y, image, group):
+        super().__init__(group)
+        if image[0] == 1:
+            self.image = shovel_image
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+
+
+class CellMenu(pygame.sprite.Sprite):
+    def __init__(self, x, y, group=all_cell):
+        super().__init__(group)
+        self.image = cell_image
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
 
@@ -28,17 +54,6 @@ class Zombie(pygame.sprite.Sprite):
             self.image = zombie_down[moment]
         self.turn = 0
         self.move = 0
-        self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = x, y
-
-
-class Stone(pygame.sprite.Sprite):
-    def __init__(self, x, y, flag, group=all_stone):
-        super().__init__(group)
-        if flag:
-            self.image = stone_image1
-        else:
-            self.image = stone_image2
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
 
@@ -63,15 +78,30 @@ class Board:
         self.flag = True
         self.x = -1
         self.y = -1
+        self.effect, self.id = -1, -1
+        self.menu = menu_array
 
     def get_click(self, mouse_pos):
         cell = self.get_cell(mouse_pos)
         if cell:
-            # print(cell[2], cell[3])
-            return self.on_click(cell)
+            # print(cell)
+            if cell[4]:
+                return self.on_click(cell)
+            else:
+                return self.action(cell)
         else:
-            print(None)
+            # print(None)
             return []
+
+    def action(self, cell_coords):
+        pos_x, pos_y, w, h, flag = cell_coords
+        if self.effect == -1:
+            if len(self.menu) > h * menu_size_x + w:
+                self.effect = self.menu[h * menu_size_x + w][0]
+                self.id = h * menu_size_x + w
+        else:
+            self.effect = -1
+        return []
 
     def get_cell(self, mouse_pos):
         pos_x = self.left
@@ -79,19 +109,57 @@ class Board:
         for i in range(self.height):
             for j in range(self.width):
                 if pos_x <= mouse_pos[0] <= pos_x + self.cell_size and pos_y <= mouse_pos[1] <= pos_y + self.cell_size:
-                    return pos_x, pos_y, j, i
+                    return pos_x, pos_y, j, i, 1
+                pos_x += self.cell_size
+            pos_x = self.left
+            pos_y += self.cell_size
+        pos_x = self.left
+        pos_y = self.top
+        for i in range(menu_size_y):
+            for j in range(menu_size_x):
+                if pos_x <= mouse_pos[0] - self.cell_size * self.width <= pos_x + self.cell_size\
+                   and pos_y <= mouse_pos[1] <= pos_y + self.cell_size:
+                    return pos_x, pos_y, j, i, 0
                 pos_x += self.cell_size
             pos_x = self.left
             pos_y += self.cell_size
 
     def on_click(self, cell_coords):
-        pos_x, pos_y, w, h = cell_coords
+        pos_x, pos_y, w, h, flag = cell_coords
         if self.flag:
-            self.flag = not (start_field[h][w] == 10)
-            self.x = w
-            self.y = h
+            if self.effect != -1:
+                if self.effect == 1 and start_field[h][w] == 0 and self.menu[self.id][1] > 0:
+                    start_field[h][w] = 4
+                    group = pygame.sprite.Group()
+                    FieldImage(w * board.cell_size, h * board.cell_size, start_field[h][w], group)
+                    group.draw(screen)
+                    self.menu[self.id][1] -= 1
+
+                    x = self.id % menu_size_x
+                    y = int(self.id / menu_size_y)
+
+                    group_menu = pygame.sprite.Group()
+                    CellMenu(board.cell_size * (board_size_x + x), y * board.cell_size, group_menu)
+                    group_menu.draw(screen)
+
+                    group = pygame.sprite.Group()
+                    MenuImage(board.cell_size * (board_size_x + x), y * board.cell_size, self.menu[self.id],
+                              group)
+                    group.draw(screen)
+                    font = pygame.font.SysFont('arial', 11)
+                    text = font.render(str(self.menu[self.id][1]), 1, (0, 0, 0))
+                    screen.blit(text, (board.cell_size * (board_size_x + x) + 28 - 3 * len(str(self.menu[self.id][1])),
+                                y * board.cell_size + 23))
+                    if self.menu[self.id][1] == 0:
+                        self.effect = -1
+                        self.id = -1
+            else:
+                self.flag = not (start_field[h][w] == 10)
+                self.x = w
+                self.y = h
             return []
         else:
+            self.effect = -1
             self.flag = True
             if start_field[h][w] != 0:
                 return []
@@ -106,14 +174,10 @@ class Board:
 
         for i in range(board_size_y):
             for j in range(board_size_x):
-                if start_field[i][j] == 1:
-                    tree = pygame.sprite.Group()
-                    Tree(j * board.cell_size, i * board.cell_size, tree)
-                    tree.draw(screen)
-                elif start_field[i][j] == 2 or start_field[i][j] == 3:
-                    stone = pygame.sprite.Group()
-                    Stone(j * board.cell_size, i * board.cell_size, start_field[i][j] % 2, stone)
-                    stone.draw(screen)
+                if start_field[i][j] != 0:
+                    group = pygame.sprite.Group()
+                    FieldImage(j * board.cell_size, i * board.cell_size, start_field[i][j], group)
+                    group.draw(screen)
 
         for i in zombies:
             zombie = pygame.sprite.Group()
@@ -121,10 +185,29 @@ class Board:
             zombie.draw(screen)
             start_field[i[1]][i[0]] = 10
 
+    def build_menu(self, menu_arr=[]):
+        self.menu = menu_arr
+        for i in range(menu_size_x):
+            for j in range(menu_size_y):
+                CellMenu(board.cell_size * (board_size_x + i), j * board.cell_size)
+        all_cell.draw(screen)
+
+        for i in range(len(menu_arr)):
+            group = pygame.sprite.Group()
+            x = i % menu_size_x
+            y = int(i / menu_size_y)
+            MenuImage(board.cell_size * (board_size_x + x), y * board.cell_size, menu_arr[i], group)
+            group.draw(screen)
+            font = pygame.font.SysFont('arial', 11)
+            text = font.render(str(menu_arr[i][1]), 1, (0, 0, 0))
+            screen.blit(text, (board.cell_size * (board_size_x + x) + 28 - 3 * len(str(menu_arr[i][1])),
+                               y * board.cell_size + 23))
+
 
 board = Board(board_size_x, board_size_y)
 
 board.build()
+board.build_menu(menu_array)
 
 running = True
 

@@ -25,3 +25,7 @@ zombie_right = [load_image("zombie_right_0.png", -1), load_image("zombie_right_1
                 load_image("zombie_right_2.png", -1), load_image("zombie_right_3.png", -1)]
 zombie_up = [load_image("zombie_up_0.png", -1), load_image("zombie_up_1.png", -1),
              load_image("zombie_up_2.png", -1), load_image("zombie_up_3.png", -1)]
+bed_image = load_image("bed.jpg")
+cell_image = load_image("cell.png")
+laboratory_image = load_image("laboratory.png", -1)
+shovel_image = load_image("shovel.png", -1)
