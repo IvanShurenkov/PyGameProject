@@ -1,5 +1,5 @@
-from queue import Queue
 from constants import board_size_x, board_size_y, start_field
+from queue import Queue
 
 
 def check(x, y):
@@ -7,27 +7,29 @@ def check(x, y):
     return t
 
 
-def bfs(start_x, start_y, end_x, end_y):
+def bfs(start, end):
+    start_h, start_w = start[0], start[1]
+    end_h, end_w = end[0], end[1]
     q = Queue()
-    q.put([start_y, start_x])
-    step = [[1, 0], [0, 1], [-1, 0], [0, -1]]
-    used = [[False] * board_size_x for _ in range(board_size_y)]
-    parent = [[[-1, -1]] * board_size_x for _ in range(board_size_y)]
+    q.put([start_h, start_w])
+    steps = [[1, 0], [0, 1], [-1, 0], [0, -1]]
+    used = [[False for i in range(board_size_x)] for _ in range(board_size_y)]
+    used[start_h][start_w] = True
+    parent = [[[-1, -1] for i in range(board_size_x)] for _ in range(board_size_y)]
     while not q.empty():
-        a = q.get()
-        if a == [end_y, end_x]:
+        h, w = q.get()
+        if [h, w] == [end_h, end_w]:
             break
-        for i in step:
-            if check(a[1] + i[1], a[0] + i[0]) and start_field[a[0] + i[0]][a[1] + i[1]] == 0 \
-                    and not used[a[0] + i[0]][a[1] + i[1]]:
-                used[a[0] + i[0]][a[1] + i[1]] = True
-                parent[a[0] + i[0]][a[1] + i[1]] = a
-                q.put([a[0] + i[0], a[1] + i[1]])
-    ans = [[end_y, end_x]]
-    while parent[end_y][end_x] != [-1, -1]:
-        ans.append(parent[end_y][end_x])
-        x = parent[end_y][end_x][1]
-        end_y = parent[end_y][end_x][0]
-        end_x = x
+        for step in steps:
+            if check(w + step[0], h + step[1]) and not used[h + step[1]][w + step[0]] and \
+               start_field[h + step[1]][w + step[0]] == 0:
+                parent[h + step[1]][w + step[0]] = [w, h]
+                used[h + step[1]][w + step[0]] = True
+                q.put([h + step[1], w + step[0]])
+    h, w = end_h, end_w
+    ans = [[w, h]]
+    while parent[h][w] != [-1, -1]:
+        ans.append(parent[h][w])
+        w, h = parent[h][w]
     ans = list(reversed(ans))
     return ans
